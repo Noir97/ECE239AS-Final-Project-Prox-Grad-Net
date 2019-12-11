@@ -14,11 +14,6 @@ def weights_init(m):
     elif isinstance(m, nn.BatchNorm2d):
         init.normal_(m.weight.data, mean=1, std=0.02)
         init.constant_(m.bias.data, 0)
-        
-def complex_multiplication(t1, t2):
-    real1, imag1 = t1.transpose(0,4)
-    real2, imag2 = t2.transpose(0,4)
-    return torch.stack([real1 * real2 - imag1 * imag2, real1 * imag2 + imag1 * real2], dim = 0).transpose(0,4)
 
 class CNN(nn.Module):
     def __init__(self):
@@ -47,6 +42,7 @@ class CNN(nn.Module):
         y = self.activation(self.batchnorm[0](self.conv_input(x)))
         for i in range(self.l):
             y = self.activation(self.batchnorm[i+1](self.conv[i](y)))
+        # residual connection
         y = self.conv_output(y) + x
         return y
     
@@ -56,13 +52,14 @@ class PGDeblurringNetwork(nn.Module):
         self.CNN = CNN()
         self.C0 = nn.Parameter(torch.zeros(1))
         self.Ck = nn.Parameter(torch.zeros(1))
-        
+        self.image_size = (180, 180)
+        # blur kernel disk7 , pad it into imagesize and shift it for further use.
         k = tools.fspecial('disk', 7)
-        kpad = np.zeros((256, 256))
-        kpad[121:136, 121:136] = k
-        kshift = np.fft.fftshift(kpad)
-        kshift = torch.from_numpy(kshift).float()
-        self.K = torch.rfft(kshift.unsqueeze(0).unsqueeze(0), 2, onesided=False)
+        kshift = tools.pad_and_shift(k, self.image_size)
+        kshift = torch.from_numpy(kshift).float().unsqueeze(0).unsqueeze(0)
+        # DFT of the kernel
+        self.K = torch.rfft(kshift, 2, onesided=False)
+        # Precompute the norm
         self.K2 = torch.pow(torch.norm(self.K, dim=4).unsqueeze(4), 2)
         self.one = torch.ones(self.K2.shape)
         if torch.cuda.is_available():
@@ -75,10 +72,12 @@ class PGDeblurringNetwork(nn.Module):
         self.C0.data.fill_(1000.0)
         
     def forward(self, x):
-        kTyfft = tools.complex_multiplication(torch.rfft(x, 2, onesided=False), self.K)
+        # Compute the DFT of k^T * input
+        kTyfft = tools.complex_multiplication(torch.rfft(x, 2, onesided=False), self.K.transpose(2, 3))
         if torch.cuda.is_available():
             kTyfft = kTyfft.cuda()
         xk = x.clone()
+        # Iterations
         for k in range(8):
             ak = self.C0 * torch.pow(self.Ck, -k)
             xk = ak * kTyfft + torch.rfft(self.CNN(xk), 2, onesided=False)

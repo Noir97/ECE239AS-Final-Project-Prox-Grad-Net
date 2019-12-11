@@ -10,14 +10,14 @@ import random
 class TrainingDataset(Dataset):
     def __init__(self, path):
         self.path = path
-        self.imageSize = (256, 256)
+        self.imageSize = (180, 180)
         self.images = []
+
+        # blur kernel disk7 , pad it into imagesize and shift it for further use.
         k = tools.fspecial('disk', 7)
-        kpad = np.zeros(self.imageSize)
-        kpad[121:136, 121:136] = k
-        kshift = np.fft.fftshift(kpad)
-        kshift = torch.from_numpy(kshift).float()
-        self.K = torch.rfft(kshift.unsqueeze(0).unsqueeze(0), 2, onesided=False)
+        kshift = tools.pad_and_shift(k, self.image_size)
+        kshift = torch.from_numpy(kshift).float().unsqueeze(0).unsqueeze(0)
+        self.K = torch.rfft(kshift, 2, onesided=False)
 
         for path, _, fns in os.walk(self.path):
             for fn in fns:
@@ -25,12 +25,13 @@ class TrainingDataset(Dataset):
                 self.images.append(img.copy())
                 img.close()
     
-    def blur_and_noise_collate_fn(self, batch):
+    def collate_fn(self, batch):
         originImg = []
         blurredNoisyImg = []
         for img in batch:
             originImg.append(img.unsqueeze(0))
             noise = torch.randn(img.size()) * (5.7020/255)
+            # generate blurry image directly using multiplication in frequenvy domain.
             blurred = torch.irfft(tools.complex_multiplication(torch.rfft(img.unsqueeze(0), 2, onesided=False), self.K), 2, onesided=False)
             blurredNoisyImg.append(blurred + noise.unsqueeze(0))
         return torch.cat(originImg, 0), torch.cat(blurredNoisyImg, 0)
@@ -40,25 +41,19 @@ class TrainingDataset(Dataset):
 
     def __getitem__(self, idx):
         img = self.images[idx]
-        
         i, j, h, w = transforms.RandomCrop.get_params(
             img, output_size=self.imageSize)
         img = transforms.functional.crop(img, i, j, h, w)
-
         # Random horizontal flipping
         if random.random() > 0.5:
             img = transforms.functional.hflip(img)
-
         # Random rotation by 90 degree
         if random.random() > 0.5:
             img = transforms.functional.rotate(img, 90)
-
         # Random vertical flipping
         if random.random() > 0.5:
             img = transforms.functional.vflip(img)
-
         img = transforms.functional.to_tensor(img)
-        
         return img
 
 if __name__ == '__main__':
@@ -67,7 +62,7 @@ if __name__ == '__main__':
     path = "../dataset/BSDS500/deblur_disk/train"
     dataset = TrainingDataset(path)
     print(len(dataset))
-    dataloader = DataLoader(dataset, batch_size=48, shuffle=True, collate_fn=dataset.blur_and_noise_collate_fn)
+    dataloader = DataLoader(dataset, batch_size=48, shuffle=True, collate_fn=dataset.collate_fn)
 
     for epoch in range(1):
         for batch_n, (img, noisyImg) in enumerate(dataloader):

@@ -27,6 +27,15 @@ def complex_division(t1, t2):
     norm = (real2**2 + imag2**2).unsqueeze(0).transpose(0, 4)
     return temp/norm
 
+# pad a kernel to imagesize and shift it
+def pad_and_shift(k, image_size):
+    a, b = image_size/2
+    w, l = (k.shape-1)/2
+    kpad = np.zeros(image_size)
+    kpad[a-w:a+w+1, b+l:b+l+1] = k
+    kshift = np.fft.fftshift(kpad)
+    return kshift
+
 '''
 Create predefined 2-D blur kernel filters
 

@@ -2,5 +2,3 @@
 Repository of the final project of ECE239AS: Computational Imaging
 
 Che-Hsien Lin, Neng Wang
-
-

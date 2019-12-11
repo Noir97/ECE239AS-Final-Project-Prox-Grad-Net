@@ -28,20 +28,20 @@ net = PGDeblurringNetwork().to(device)
 
 criterion = nn.MSELoss().to(device)
 optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=0.0001)
-scheduler = StepLR(optimizer, step_size=120, gamma=0.5)
+scheduler = StepLR(optimizer, step_size=300, gamma=0.5)
 
 if pretrainedModel != '':
     model = torch.load(pretrainedModel)
     net.load_state_dict(model['state_dict'])
-    if lr == 0.01 :
+    if lr == 0.001 :
         optimizer.load_state_dict(model['optimizer'])
         scheduler.load_state_dict(model['scheduler'])
     epoch0 = model['epoch']
 else: 
     epoch0 = 0
 
-train_path = "../dataset/VOC2012/train_all"
-val_path = "../dataset/VOC2012/val_all"
+train_path = "../dataset/BSDS500/train"
+val_path = "../dataset/BSDS500/val"
 train_dataset = TrainingDataset(train_path)
 val_dataset = TrainingDataset(val_path)
 train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True, collate_fn=train_dataset.blur_and_noise_collate_fn)
