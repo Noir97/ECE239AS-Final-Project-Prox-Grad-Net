@@ -9,7 +9,7 @@ import torchvision.transforms.functional as TF
 from torch.optim.lr_scheduler import StepLR
 import argparse
 
-from model import PGDeblurringNetwork
+from model import PGDenoisingNetwork
 from dataset import TrainingDataset
 
 parser = argparse.ArgumentParser()
@@ -24,7 +24,7 @@ epoch_num = 500
 
 torch.manual_seed(1000)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-net = PGDeblurringNetwork().to(device)
+net = PGDenoisingNetwork().to(device)
 
 criterion = nn.MSELoss().to(device)
 optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=0.0001)

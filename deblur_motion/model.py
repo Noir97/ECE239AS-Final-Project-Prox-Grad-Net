@@ -52,8 +52,10 @@ class PGDeblurringNetwork(nn.Module):
         self.C0 = nn.Parameter(torch.zeros(1))
         self.Ck = nn.Parameter(torch.zeros(1))
         self.image_size = (180, 180)
-        # blur kernel disk7 , pad it into imagesize and shift it for further use.
-        k = tools.fspecial('disk', 7)
+
+        # blur kernel motion with length 21 and angle 45 deg  
+        # pad it into imagesize and shift it for further use.
+        k = tools.fspecial('motion', 21, 45)
         kshift = tools.pad_and_shift(k, self.image_size)
         kshift = torch.from_numpy(kshift).float().unsqueeze(0).unsqueeze(0)
         # DFT of the kernel
@@ -61,6 +63,7 @@ class PGDeblurringNetwork(nn.Module):
         # Precompute the norm
         self.K2 = torch.pow(torch.norm(self.K, dim=4).unsqueeze(4), 2)
         self.one = torch.ones(self.K2.shape)
+        
         if torch.cuda.is_available():
             self.K2 = self.K2.cuda()
             self.K = self.K.cuda()
