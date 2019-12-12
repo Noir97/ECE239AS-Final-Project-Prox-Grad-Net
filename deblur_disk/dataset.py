@@ -15,7 +15,7 @@ class TrainingDataset(Dataset):
 
         # blur kernel disk7 , pad it into imagesize and shift it for further use.
         k = tools.fspecial('disk', 7)
-        kshift = tools.pad_and_shift(k, self.image_size)
+        kshift = tools.pad_and_shift(k, self.imageSize)
         kshift = torch.from_numpy(kshift).float().unsqueeze(0).unsqueeze(0)
         self.K = torch.rfft(kshift, 2, onesided=False)
 

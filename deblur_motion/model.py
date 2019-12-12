@@ -78,7 +78,7 @@ class PGDeblurringNetwork(nn.Module):
         kTyfft = tools.complex_multiplication(torch.rfft(x, 2, onesided=False), self.K.transpose(2, 3))
         if torch.cuda.is_available():
             kTyfft = kTyfft.cuda()
-        xk = x.clone()
+        xk = torch.irfft(kTyfft, 2, onesided=False)
         # Iterations
         for k in range(8):
             ak = self.C0 * torch.pow(self.Ck, -k)

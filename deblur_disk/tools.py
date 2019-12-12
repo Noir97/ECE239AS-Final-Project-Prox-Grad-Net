@@ -29,10 +29,14 @@ def complex_division(t1, t2):
 
 # pad a kernel to imagesize and shift it
 def pad_and_shift(k, image_size):
-    a, b = image_size/2
-    w, l = (k.shape-1)/2
+    a, b = image_size
+    w, l = k.shape
+    a = int(a/2)
+    b = int(b/2)
+    w = int((w - 1)/2)
+    l = int((l - 1)/2)
     kpad = np.zeros(image_size)
-    kpad[a-w:a+w+1, b+l:b+l+1] = k
+    kpad[a-w:a+w+1, b-l:b+l+1] = k
     kshift = np.fft.fftshift(kpad)
     return kshift
 

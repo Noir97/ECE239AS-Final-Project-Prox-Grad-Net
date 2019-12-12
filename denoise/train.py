@@ -19,8 +19,8 @@ args = parser.parse_args()
 
 pretrainedModel = args.model
 lr = args.lr
-batchSize = 4
-epoch_num = 500
+batchSize = 8
+epoch_num = 1500
 
 torch.manual_seed(1000)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,10 +29,12 @@ net = PGDenoisingNetwork().to(device)
 criterion = nn.MSELoss().to(device)
 optimizer = optim.Adam(net.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=0.0001)
 scheduler = StepLR(optimizer, step_size=300, gamma=0.5)
+loss_track = []
 
 if pretrainedModel != '':
     model = torch.load(pretrainedModel)
     net.load_state_dict(model['state_dict'])
+    loss_track = torch.load('loss.pth')
     if lr == 0.001 :
         optimizer.load_state_dict(model['optimizer'])
         scheduler.load_state_dict(model['scheduler'])
@@ -40,14 +42,14 @@ if pretrainedModel != '':
 else: 
     epoch0 = 0
 
-train_path = "../dataset/BSDS500/train"
-val_path = "../dataset/BSDS500/val"
+train_path = "../../dataset/BSDS500/train"
+val_path = "../../dataset/BSDS500/val"
 train_dataset = TrainingDataset(train_path)
 val_dataset = TrainingDataset(val_path)
 train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True, collate_fn=train_dataset.collate_fn)
 val_dataloader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False, collate_fn=val_dataset.collate_fn)
 
-loss_track = []
+
 for epoch in range(epoch0, epoch_num):
     train_loss, val_loss, avg_psnr = 0.0, 0.0, 0.0
     
@@ -92,4 +94,4 @@ for epoch in range(epoch0, epoch_num):
         # print(net.Ck.data)
         
     if epoch % 5 == 0:
-        vutils.save_image(torch.cat((noisyImg.detach(), noisyImg_v.detach(), output.detach(), output_v.detach(), img, img_v), 0), 'deblurringImg/epoch_{}.png'.format(epoch+1), nrow=batchSize*2)
+        vutils.save_image(torch.cat((noisyImg.detach(), noisyImg_v.detach(), output.detach(), output_v.detach(), img, img_v), 0), 'denoiseImg/epoch_{}.png'.format(epoch+1), nrow=batchSize*2)

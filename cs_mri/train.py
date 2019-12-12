@@ -11,7 +11,7 @@ from model import CS_MRI_Network
 from dataset import TrainingDataset
 
 pretrainedModel = ''
-batchSize = 4
+batchSize = 8
 epoch_num = 1500
 
 torch.manual_seed(1000)
@@ -25,9 +25,9 @@ criterion = nn.MSELoss().to(device)
 optimizer = optim.Adam(net.parameters(), lr=0.005, betas=(0.9, 0.999), weight_decay=0.0001)
 scheduler = StepLR(optimizer, step_size=600, gamma=0.5)
 
-train_path = "./data/train_ori"
-val_path = "./data/val_ori"
-mask_path = './data/mask'
+train_path = "../../dataset/cs_mri/train_ori"
+val_path = "../../dataset/cs_mri/val_ori"
+mask_path = '../../dataset/cs_mri/mask'
 train_dataset = TrainingDataset(train_path, mask_path)
 val_dataset = TrainingDataset(val_path, mask_path)
 train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True, collate_fn=train_dataset.collate_fn)

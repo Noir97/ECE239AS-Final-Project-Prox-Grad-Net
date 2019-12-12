@@ -19,8 +19,8 @@ args = parser.parse_args()
 
 pretrainedModel = args.model
 lr = args.lr
-batchSize = 4
-epoch_num = 500
+batchSize = 16
+epoch_num = 1500
 
 torch.manual_seed(1000)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,8 +40,8 @@ if pretrainedModel != '':
 else: 
     epoch0 = 0
 
-train_path = "../dataset/BSDS500/train"
-val_path = "../dataset/BSDS500/val"
+train_path = "../../dataset/BSDS500/train"
+val_path = "../../dataset/BSDS500/val"
 train_dataset = TrainingDataset(train_path)
 val_dataset = TrainingDataset(val_path)
 train_dataloader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True, collate_fn=train_dataset.collate_fn)
@@ -92,4 +92,4 @@ for epoch in range(epoch0, epoch_num):
         # print(net.Ck.data)
         
     if epoch % 5 == 0:
-        vutils.save_image(torch.cat((noisyImg.detach(), noisyImg_v.detach(), output.detach(), output_v.detach(), img, img_v), 0), 'deblurringImg/epoch_{}.png'.format(epoch+1), nrow=batchSize*2)
+        vutils.save_image(torch.cat((noisyImg.detach(), noisyImg_v.detach(), output.detach(), output_v.detach(), img, img_v), 0), 'deblurringImg/epoch_{}.png'.format(epoch+1), nrow=batchSize*4)
