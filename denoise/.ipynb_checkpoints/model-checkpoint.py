@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-import numpy.fft as nf
-import h5py
 
 def weights_init(m):
     if isinstance(m, nn.Conv2d):
@@ -17,48 +15,52 @@ class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
         self.d = 64
-        self.l = 5
+        self.l = 8
         self.conv = nn.ModuleList()
         self.batchnorm = nn.ModuleList()
 
         # convolution
-        self.conv_input = nn.Conv2d(1, self.d, 3, 1, 1, bias=False)
+        self.conv_input = nn.Conv2d(3, self.d, 3, 1, 1, bias=False)
         for i in range(self.l):
             self.conv.append(nn.Conv2d(self.d, self.d, 3, 1, 1, bias=False))
-        self.conv_output = nn.Conv2d(self.d, 1, 3, 1, 1, bias=False)
+        self.conv_output = nn.Conv2d(self.d, 3, 3, 1, 1, bias=False)
                              
         # activation function
         self.activation = nn.ReLU(True)
 
         # batchnorm
-        for i in range(self.l):
+        for i in range(self.l+1):
             self.batchnorm.append(nn.BatchNorm2d(self.d))
 
         self.apply(weights_init)
 
     def forward(self, x):
-        y = self.activation(self.conv_input(x))
+        y = self.activation(self.batchnorm[0](self.conv_input(x)))
         for i in range(self.l):
-            y = self.activation(self.batchnorm[i](self.conv[i](y)))
+            y = self.activation(self.batchnorm[i+1](self.conv[i](y)))
+        # residual connection
         y = self.conv_output(y) + x
         return y
     
-class CS_MRI_Network(nn.Module):
+class PGDenoisingNetwork(nn.Module):
     def __init__(self):
-        super(CS_MRI_Network, self).__init__()
+        super(PGDenoisingNetwork, self).__init__()
         self.CNN = CNN()
-        mask = h5py.File('./data/mask/mask_30.mat')['mask'][()]
-        self.P = torch.from_numpy(nf.ifftshift(mask)).view(1,1,256,256,1).float().cuda()
-        print(self.P.shape)
+        self.C0 = nn.Parameter(torch.zeros(1))
+        self.Ck = nn.Parameter(torch.zeros(1))
+
+        # initialize
+        self.Ck.data.fill_(2.0)
         
-    def forward(self, x): 
-        xk = torch.irfft(self.P*x, 2, onesided = False)
-        for k in range(8):
-            zk = torch.rfft(self.CNN(xk), 2, onesided = False)
-            xk = torch.irfft(self.P*x + (1-self.P)*zk, 2, onesided = False)
+    def forward(self, x):
+        xk = x.clone()
+        # Iterations
+        for k in range(4):
+            ak = self.C0 * torch.pow(self.Ck, -k)
+            xk = (ak * x + self.CNN(xk)) / (ak + 1.0)
         return xk
 
 if __name__ == '__main__':
-    model = CS_MRI_Network()
+    model = PGDenoisingNetwork()
     x = torch.randn(2, 3, 180, 180)
     print(model(x).size())
