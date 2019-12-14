@@ -8,8 +8,9 @@ In this final project, We reproduced the work of "Unrolled Optimization with Dee
 We built the 4 following models:
 
 ## ODP proximal gradient denoising network
-Code in /denoise
-Trained weights in /denoise/checkpoint/model.pth
+Code in `/denoise`
+
+Trained weights in `/denoise/checkpoint/model.pth`
 
 For train:
 Edit the path in train.py and simply run `python train.py`
@@ -24,8 +25,9 @@ Test result will be saved in test.py, and the PSNR will be printed.
 ![denoising](denoising_result.png)
 
 ## ODP proximal gradient deblurring network (disk & motion)
-Code in /deblur_disk & /deblur_motion
-Trained weights in /deblur_disk/checkpoint/model.pth & /deblur_motion/checkpoint/model.pth
+Code in `/deblur_disk` & `/deblur_motion`
+
+Trained weights in `/deblur_disk/checkpoint/model.pth` & `/deblur_motion/checkpoint/model.pth`
 
 For train:
 Edit the path in train.py and simply run `python train.py`
@@ -38,9 +40,10 @@ Batchsize can be edited in test.py. Test result will be saved in test.py, and th
 
 ![deblurring](deblurring_result.png)
 
-## ODP proximal gradient denoising network
-Code in /cs_mri
-Sampling Patterns in /cs_mri/data/mask
+## ODP proximal gradient CS MRI network
+Code in `/cs_mri`
+
+Sampling Patterns in `/cs_mri/data/mask`
 
 We train one model per pattern. 
 In order to train on a certain pattern, related code in model.py and dataset.py has to be modified.
